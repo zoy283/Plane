@@ -2,8 +2,6 @@ import csv
 from math import pi
 import math
 
-from matplotlib.pyplot import tick_params
-
 
 def addCircleRoute(routeList, routeNodeIndex, radius, direction):
     # radianList = [
