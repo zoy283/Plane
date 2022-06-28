@@ -4,36 +4,6 @@ import math
 
 from matplotlib.pyplot import tick_params
 
-def addMove(routeList,routeNodeIndex,pix,limitLeft,limitRight,XorY):
-#pix 图像x或者y轴像素
-#limitleft 中心点左边阈值
-#limitleft 中心点右边阈值
-
-    step=0.2
-    time=0.5
-
-    x = float(routeList[routeNodeIndex][0])
-    y = float(routeList[routeNodeIndex][1])
-    z = float(routeList[routeNodeIndex][2])
-
-    x_new=x
-    y_new=y
-    if XorY=="Y":
-        if pix<limitLeft:
-            y_new=y-step
-        elif pix>limitRight:
-            y_new=y+step
-        routeList.insert(routeNodeIndex + 1,
-         [x, y_new, z, time, 0, 0, 0])
-    
-    # if XorY=="X":
-    #     if pix<limitLeft:
-    #         x_new=x-step
-    #     elif pix>limitRight:
-    #         x_new=x+step
-    # routeList.insert(routeNodeIndex + 1,
-    # [x_new, y_new, z, time, 0, 0, 0])
-    return routeList
 
 def addCircleRoute(routeList, routeNodeIndex, radius, direction):
     # radianList = [
@@ -82,17 +52,12 @@ def addCircleRoute(routeList, routeNodeIndex, radius, direction):
 
 
 if __name__ == '__main__':
-    global routeNodeIndex
     routeCsv = csv.reader(open('router.txt'))
     routeList = list(routeCsv)
     routeNodeNum = len(routeList)
     #输出路径点个数
     print("route nodes num is : " + str(routeNodeNum - 1))
     routeNodeIndex = 1
-    pix=15
-    for i in range(5):
-        addMove(routeList, routeNodeIndex,pix,20,25,"Y")
-        pix=pix+1
-        routeNodeIndex =routeNodeIndex + 1
-    # routeList = addCircleRoute(routeList, routeNodeIndex, 0.5, 'cntclock')
+
+    routeList = addCircleRoute(routeList, routeNodeIndex, 0.5, 'cntclock')
     print(routeList)
