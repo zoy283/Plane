@@ -1,13 +1,9 @@
 import csv
-from math import pi
 import math
 from time import sleep
 import time
-
 import cv2
-
 import check_color
-
 
 
 def findStick(routeList, routeNodeIndex, x, width):
@@ -53,11 +49,11 @@ if __name__ == '__main__':
     cap.set(4, 240)
     while True:
         frame = cap.read()
-        frame, x, width,color_flag=check_color(frame, "green")
-        if color_flag ==1 :
+        frame, x, width, color_flag = check_color(frame, "green")
+        if color_flag == 1:
             findStick(routeList, routeNodeIndex, x, width)
             routeNodeNum = len(routeList)
-        
-        print(str(routeList[routeNodeIndex+1]))
-        routeNodeIndex = routeNodeIndex+1
+
+        print(str(routeList[routeNodeIndex + 1]))
+        routeNodeIndex = routeNodeIndex + 1
         time.sleep(2)
