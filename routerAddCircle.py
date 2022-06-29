@@ -2,8 +2,6 @@ import csv
 from math import pi
 import math
 
-from matplotlib.pyplot import tick_params
-
 
 def addCircleRoute(routeList, routeNodeIndex, radius, direction):
     # radianList = [
@@ -18,6 +16,7 @@ def addCircleRoute(routeList, routeNodeIndex, radius, direction):
     #     10 / 6 * pi,
     #     11 / 6 * pi,
     # ]
+    # 用14个路径点模拟圆，每个路径点用时1秒
     time = 1
     diff = 14
     radianList = []
