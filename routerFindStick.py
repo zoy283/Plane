@@ -1,6 +1,13 @@
 import csv
 from math import pi
 import math
+from time import sleep
+import time
+
+import cv2
+
+import check_color
+
 
 
 def findStick(routeList, routeNodeIndex, x, width):
@@ -23,13 +30,13 @@ def findStick(routeList, routeNodeIndex, x, width):
         else:
             route_flag = 2
         routeList.insert(routeNodeIndex + 1, [X, y_new, Z, time, 0, 0, 0])
-    # 前后调整
-    if route_flag == 2:
-        if width < minwidth:
-            x_new = x - 0.2
-        elif width > maxwidth:
-            x_new = x + 0.2
-        routeList.insert(routeNodeIndex + 1, [x_new, Y, Z, time, 0, 0, 0])
+    # # 前后调整
+    # if route_flag == 2:
+    #     if width < minwidth:
+    #         x_new = x - 0.2
+    #     elif width > maxwidth:
+    #         x_new = x + 0.2
+    #     routeList.insert(routeNodeIndex + 1, [x_new, Y, Z, time, 0, 0, 0])
 
     return routeList
 
@@ -41,5 +48,16 @@ if __name__ == '__main__':
     #输出路径点个数
     print("route nodes num is : " + str(routeNodeNum - 1))
     routeNodeIndex = 1
-
-    print(routeList)
+    cap = cv2.VideoCapture(0)
+    cap.set(3, 320)
+    cap.set(4, 240)
+    while True:
+        frame = cap.read()
+        frame, x, width,color_flag=check_color(frame, "green")
+        if color_flag ==1 :
+            findStick(routeList, routeNodeIndex, x, width)
+            routeNodeNum = len(routeList)
+        
+        print(str(routeList[routeNodeIndex+1]))
+        routeNodeIndex = routeNodeIndex+1
+        time.sleep(2)
