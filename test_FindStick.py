@@ -51,7 +51,8 @@ if __name__ == '__main__':
     cap.set(3, 320)
     cap.set(4, 240)
     while True:
-        ret,frame = cap.read()
+        # ret,frame = cap.read()
+        frame = cv2.imread("gree.png")
         frame, x, width, color_flagz,area = check_color(frame, "green")
         if color_flagz == 1:
             findStick(routeList, routeNodeIndex, x)
@@ -62,5 +63,4 @@ if __name__ == '__main__':
             break
         print("route nodes num is : " + str(routeList[routeNodeIndex]))
         print("area1 : " ,area)
-        routeNodeIndex = routeNodeIndex + 1
         time.sleep(0.2)

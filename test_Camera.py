@@ -6,6 +6,7 @@ from check_color import check_color
 
 arg = sys.argv
 # print(arg)
+# cap=cv2.VideoCapture(int(arg[1]))
 cap=cv2.VideoCapture(0)
 cap.set(3,320)
 cap.set(4,240)
@@ -13,12 +14,11 @@ cap.set(4,240)
 while (True):
     ret,frame=cap.read()
     if ret == True:
-        frame,x,width,color_flag = check_color(frame, "red")
         cv2.imshow('frame', frame)
-        if cv2.waitKey(1) & 0xff == ord('q'):
+        if cv2.waitKey(1) & 0xff == 27: # ESC
             break
     else:
         break
-
+ 
 cap.release()
 cv2.destroyAllWindows()
