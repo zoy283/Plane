@@ -3,10 +3,10 @@ import math
 from time import sleep
 import time
 import cv2
-import check_color
+from check_color import check_color
 
 
-def findStick(routeList, routeNodeIndex, x, width):
+def findStick(routeList, routeNodeIndex, x):
     global route_flag
     X = float(routeList[routeNodeIndex][0])
     Y = float(routeList[routeNodeIndex][1])
@@ -15,16 +15,17 @@ def findStick(routeList, routeNodeIndex, x, width):
     time = 0.7
     minwidth = 20
     maxwidth = 20
-    minY = 70
-    maxY = 90
+    minY = 75  # 左右范围
+    maxY = 85
+    step = 0.2 # 步进
     # 水平调整
     if route_flag == 1:
         if x < minY:
-            y_new = X - 0.2
+            y_new = Y - step
         elif x > maxY:
-            y_new = X + 0.2
+            y_new = Y + step
         else:
-            route_flag = 2
+            y_new = Y
         routeList.insert(routeNodeIndex + 1, [X, y_new, Z, time, 0, 0, 0])
     # # 前后调整
     # if route_flag == 2:
@@ -38,6 +39,8 @@ def findStick(routeList, routeNodeIndex, x, width):
 
 
 if __name__ == '__main__':
+    global route_flag
+    route_flag = 1
     routeCsv = csv.reader(open('router.txt'))
     routeList = list(routeCsv)
     routeNodeNum = len(routeList)
@@ -48,12 +51,16 @@ if __name__ == '__main__':
     cap.set(3, 320)
     cap.set(4, 240)
     while True:
-        frame = cap.read()
-        frame, x, width, color_flag = check_color(frame, "green")
-        if color_flag == 1:
-            findStick(routeList, routeNodeIndex, x, width)
+        ret,frame = cap.read()
+        frame, x, width, color_flagz,area = check_color(frame, "green")
+        if color_flagz == 1:
+            findStick(routeList, routeNodeIndex, x)
             routeNodeNum = len(routeList)
-
-        print(str(routeList[routeNodeIndex + 1]))
+        
+        cv2.imshow("frame", frame)
+        if cv2.waitKey(1) & 0xff == ord('q'):
+            break
+        print("route nodes num is : " + str(routeList[routeNodeIndex]))
+        print("area1 : " ,area)
         routeNodeIndex = routeNodeIndex + 1
-        time.sleep(2)
+        time.sleep(0.2)
