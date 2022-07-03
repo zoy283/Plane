@@ -5,18 +5,18 @@ def nothing(x):
     pass
 #通过Opencv读取图片信息
 #src = cv2.imread('image.jpg')
-img = cv2.imread('gree.png')
+img = cv2.imread('green.png')
 rows,cols,channels = img.shape
 cv2.imshow("src", img)
 cv2.namedWindow('img2',1)
 cv2.resizeWindow("img2", 400, 200) #创建一个500*500大小的窗口
 
 # 创建6个滑条用来操作HSV3个分量的上下截取界限
-cv2.createTrackbar('Hlow','img2',62,180,nothing)
-cv2.createTrackbar('Hup','img2',99,180,nothing)
-cv2.createTrackbar('Slow','img2',198,255,nothing)
+cv2.createTrackbar('Hlow','img2',61,180,nothing)
+cv2.createTrackbar('Hup','img2',96,180,nothing)
+cv2.createTrackbar('Slow','img2',36,255,nothing)
 cv2.createTrackbar('Sup','img2',255,255,nothing)
-cv2.createTrackbar('Vlow','img2',150,255,nothing)
+cv2.createTrackbar('Vlow','img2',31,255,nothing)
 cv2.createTrackbar('Vup','img2',255,255,nothing)
 
 # lower_red = np.array([55,30,30])

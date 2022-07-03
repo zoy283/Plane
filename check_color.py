@@ -7,8 +7,8 @@ def check_color(frame, color):
     width = 0
     color_flag=0
     area = 0
-    color_range = [[156, 43, 46], [180, 255, 255], [35, 43, 46],
-                   [77, 255, 255], [100, 43, 46], [124, 255, 255]]  # 红 绿 蓝
+    color_range = [[156, 43, 46], [180, 255, 255], [41, 19, 22],
+                   [96, 255, 255], [100, 43, 46], [124, 255, 255]]  # 红 绿 蓝
     frame = imutils.resize(frame, width=160)
     frame_new = frame
     hsv = cv2.cvtColor(
@@ -36,7 +36,7 @@ def check_color(frame, color):
         area = [cv2.contourArea(i) for i in cnt_color]
         index = np.argmax(area)
         rect_red = cv2.minAreaRect(cnt_color[index])
-        if (rect_red[1][0] > 5) and (rect_red[1][1] > 5):#   rect_red[1][1] height  rect_red[1][0] with rect[0][0], rect[0][1]中心点
+        if (rect_red[1][0] > 0) and (rect_red[1][1] > 0):#   rect_red[1][1] height  rect_red[1][0] with rect[0][0], rect[0][1]中心点
             box_red = np.int0(cv2.boxPoints(rect_red))
             # box_red[0][0] = box_red[0][0] + 75
             # box_red[1][0] = box_red[1][0] + 75

@@ -52,15 +52,16 @@ if __name__ == '__main__':
     cap.set(4, 240)
     while True:
         # ret,frame = cap.read()
-        frame = cv2.imread("gree.png")
+        frame = cv2.imread("green.png")
+        cv2.namedWindow('frame',1)
+        cv2.resizeWindow("frame", 400, 200) #创建一个500*500大小的窗口
         frame, x, width, color_flagz,area = check_color(frame, "green")
         if color_flagz == 1:
             findStick(routeList, routeNodeIndex, x)
             routeNodeNum = len(routeList)
         
+        
         cv2.imshow("frame", frame)
         if cv2.waitKey(1) & 0xff == ord('q'):
             break
-        print("route nodes num is : " + str(routeList[routeNodeIndex]))
         print("area1 : " ,area)
-        time.sleep(0.2)
