@@ -31,15 +31,16 @@ while(1):
     sup = cv2.getTrackbarPos('Sup', 'img2')
     vlow = cv2.getTrackbarPos('Vlow', 'img2')
     vup = cv2.getTrackbarPos('Vup', 'img2')
-    lower_red = np.array([hlow, slow, vlow])
-    upper_red = np.array([hup, sup, vup])
-    mask = cv2.inRange(hsv, lower_red, upper_red)
+    lower = np.array([hlow, slow, vlow])
+    upper = np.array([hup, sup, vup])
+    mask = cv2.inRange(hsv, lower, upper)
     img2 = cv2.bitwise_and(img, img, mask=mask)
 
    # cv2.imshow("src", src)
     cv2.imshow("img2", img2)
     k = cv2.waitKey(1)&0xFF
     if k == 27: #esc exit
+        print(lower,upper)
         break
 #cv2.waitKey(0)
 cv2.destroyAllWindows()
