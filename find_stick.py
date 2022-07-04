@@ -65,7 +65,7 @@ if __name__ == '__main__':
         # ret,frame = cap.read()
         frame = cv2.imread("green.png")
         cv2.namedWindow('frame', 1)
-        cv2.resizeWindow("frame", 400, 200)  #创建一个500*500大小的窗口
+        cv2.resizeWindow("frame", 400, 200)
         frame, x, width, color_flagz, area = check_color(frame, "green")
         if color_flagz == 1:
             find_stick(routeList, routeNodeIndex, x, area)

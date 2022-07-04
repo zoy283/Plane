@@ -3,7 +3,7 @@ from math import pi
 import math
 
 
-def addCircleRoute(routeList, routeNodeIndex, radius, direction):
+def add_round_route(routeList, routeNodeIndex, radius, direction):
     # radianList = [
     #     1 / 6 * pi,
     #     2 / 6 * pi,
@@ -20,7 +20,7 @@ def addCircleRoute(routeList, routeNodeIndex, radius, direction):
     time = 1
     diff = 14
     radianList = []
-    for i in range(1, diff):
+    for i in range(1, diff + 1):
         radianList.append(i / diff * 2 * pi)
     x = float(routeList[routeNodeIndex][0])
     y = float(routeList[routeNodeIndex][1])
@@ -43,10 +43,6 @@ def addCircleRoute(routeList, routeNodeIndex, radius, direction):
                 2)
             routeList.insert(routeNodeIndex + 1,
                              [x_new, y_new, z, time, 0, 0, 0])
-    # print(circleList)
-    # 返回原点
-    routeList.insert(routeNodeIndex + len(radianList) + 1,
-                     [x, y, z, time, 0, 0, 0])
     return routeList
 
 
@@ -58,5 +54,5 @@ if __name__ == '__main__':
     print("route nodes num is : " + str(routeNodeNum - 1))
     routeNodeIndex = 1
 
-    routeList = addCircleRoute(routeList, routeNodeIndex, 0.5, 'cntclock')
+    routeList = add_round_route(routeList, routeNodeIndex, 0.5, 'cntclock')
     print(routeList)
