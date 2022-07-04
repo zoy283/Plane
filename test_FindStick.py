@@ -6,41 +6,52 @@ import cv2
 from check_color import check_color
 
 
-def findStick(routeList, routeNodeIndex, x):
+def findStick(routeList, routeNodeIndex, x, area):
     global route_flag
     X = float(routeList[routeNodeIndex][0])
     Y = float(routeList[routeNodeIndex][1])
     Z = float(routeList[routeNodeIndex][2])
 
-    time = 0.7
-    minwidth = 20
-    maxwidth = 20
+    time = 0.5
+    minarea = 1400
+    maxarea = 1800
     minY = 75  # 左右范围
     maxY = 85
-    step = 0.2 # 步进
+    step = 0.05 # 左右步进
+    step1 = 0.05 # 前后步进
     # 水平调整
     if route_flag == 1:
         if x < minY:
+            if minY-x>20:
+                step=0.05
+            else:
+                step=0.02
             y_new = Y - step
+            routeList.insert(routeNodeIndex + 1, [X, y_new, Z, time, 0, 0, 0])
         elif x > maxY:
+            if x-maxY>20:
+                step=0.05
+            else:
+                step=0.02
             y_new = Y + step
-        else:
-            y_new = Y
-        routeList.insert(routeNodeIndex + 1, [X, y_new, Z, time, 0, 0, 0])
-    # # 前后调整
-    # if route_flag == 2:
-    #     if width < minwidth:
-    #         x_new = x - 0.2
-    #     elif width > maxwidth:
-    #         x_new = x + 0.2
-    #     routeList.insert(routeNodeIndex + 1, [x_new, Y, Z, time, 0, 0, 0])
+            routeList.insert(routeNodeIndex + 1, [X, y_new, Z, time, 0, 0, 0])
+        else :
+            route_flag == 1
+    # 前后调整
+    if route_flag == 2:
+        if area < minarea:
+            x_new = X - step1
+            routeList.insert(routeNodeIndex + 1, [x_new, Y, Z, time, 0, 0, 0])           
+        elif area > maxarea:
+            x_new = X + step1
+            routeList.insert(routeNodeIndex + 1, [x_new, Y, Z, time, 0, 0, 0])
 
     return routeList
 
 
 if __name__ == '__main__':
     global route_flag
-    route_flag = 1
+    route_flag = 2
     routeCsv = csv.reader(open('router.txt'))
     routeList = list(routeCsv)
     routeNodeNum = len(routeList)
@@ -57,11 +68,11 @@ if __name__ == '__main__':
         cv2.resizeWindow("frame", 400, 200) #创建一个500*500大小的窗口
         frame, x, width, color_flagz,area = check_color(frame, "green")
         if color_flagz == 1:
-            findStick(routeList, routeNodeIndex, x)
+            findStick(routeList, routeNodeIndex, x, area)
             routeNodeNum = len(routeList)
         
         
         cv2.imshow("frame", frame)
         if cv2.waitKey(1) & 0xff == ord('q'):
             break
-        print("area1 : " ,area)
+        print("area1 : " ,area,route_flag)
