@@ -33,10 +33,14 @@ def detect():
     global x_pix
     global color_flagz
     global area
+    global color
     judgeCount = 0
     while (True):
         ret, frame = cap.read()
-        frame, x_pix, width, color_flagz, area = check_color(frame, "green")
+        if (color == "green") :
+            frame, x_pix, width, color_flagz, area = check_color(frame, color)
+        elif color == "red" :
+            frame, x_pix, width, color_flagz, area = check_color(frame, color)    
         ov.show(frame)
 
 
@@ -245,6 +249,7 @@ if __name__ == '__main__':
     global CheckSum
     #-------------测试------------
     global color_flag
+    global color
     global route_flag
     global x_point
     global y_point
@@ -263,6 +268,7 @@ if __name__ == '__main__':
     cap.set(3, 320)
     cap.set(4, 240)
     route_flag = 1
+    color = "green"
     routeStartFlag = True
     barcodeData = 0
     countDrop = 0
@@ -325,6 +331,8 @@ if __name__ == '__main__':
                         dataBuf[58] = Laser_Dis[1]
                         dataBuf[59] = Laser_Dis[2]
                         dataBuf[60] = Laser_Dis[3]
+                        if(LaserDistance != 0) :
+                            LaserDistance = 0
                         dataBuf[61] = FlightMode
 
                     if CopterLanding == 1:
