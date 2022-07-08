@@ -20,40 +20,36 @@ from check_color import check_color
 
 from add_round_route import add_round_route
 from find_cam import find_cam
-from find_stick import find_stick
+from find_stick1 import find_stick
 
 CopterTakingOff = 1
 TargetPosition = [0.0, 0.0, 0.0]
 filename = 'router.txt'
+front_cam = find_cam(b"USB Camera:  USB GS CAM (usb-3f980000.usb-1.1.3):")
+board_cam = find_cam(b"mmal service 16.1 (platform:bcm2835-v4l2):")
 
 
 def detect():
     global x_pix
     global color_flagz
     global area
-    # global sum
-    # global count
-    count = 0
+    judgeCount = 0
     while (True):
         ret, frame = cap.read()
-        frame, x_pix, width, color_flagz, area = check_color(frame, "green")
-        # if(count<10):
-        #     sum[count] = area
-        #     count = count + 1
-        # else
-        #     sum
-
-
-#         ov.show(frame)
+        if (color == "green") :
+            frame, x_pix, width, color_flagz, area = check_color(frame, color)
+        elif color == "red" :
+            frame, x_pix, width, color_flagz, area = check_color(frame, color)    
+        ov.show(frame)
 
 
 def laser_init():
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BCM)
-    GPIO.setup(10, GPIO.OUT)
-    GPIO.output(10, GPIO.LOW)
     GPIO.setup(29, GPIO.OUT)
     GPIO.output(29, GPIO.HIGH)
+    GPIO.setup(40, GPIO.OUT)
+    GPIO.output(40, GPIO.LOW)
 
 
 # LED闪烁函数 number闪烁次数 color灯光颜色
@@ -123,15 +119,11 @@ def Router(name):
     if routeNodeIndex < routeNodeNum and routeStartFlag == True:
         # 第25个点（26行）将要赋值给目标,目前在第24个点（25）行的位置上
 
-        #         if (routeNodeIndex == 2):
-        #             routeList = add_round_route(routeList, routeNodeIndex, 0.7, 'clock')
-        #             print("\nafter add: " + str(routeList))
-        #             routeNodeNum = len(routeList)
         if (routeNodeIndex > 1):
             if color_flagz == 1:
                 find_stick(routeList, routeNodeIndex, x_pix, area)
+                print("area: ", area)
                 routeNodeNum = len(routeList)
-
         TargetPosition[0] = float(routeList[routeNodeIndex][0])
         TargetPosition[1] = float(routeList[routeNodeIndex][1])
         TargetPosition[2] = float(routeList[routeNodeIndex][2])
@@ -250,11 +242,12 @@ if __name__ == '__main__':
     global GetOnceCmd
     global CheckSum
     #-------------测试------------
-    global color_flag
+    global color
     global route_flag
     global x_point
     global y_point
     global barcodeData
+    global countDrop
     #-----------------------------
 
     port = serial.Serial(port="/dev/ttyAMA0",
@@ -264,13 +257,14 @@ if __name__ == '__main__':
                          timeout=1000)
     laser_init()
     ov.init()
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(front_cam)
     cap.set(3, 320)
     cap.set(4, 240)
-    route_flag = 1  #按路径飞则True
+    route_flag = 1
+    color = "green"
     routeStartFlag = True
     barcodeData = 0
-
+    countDrop = 0
     #串口通信线程
     thread_Serial = Thread(target=PortCom, args=(port, ))
     thread_Serial.start()
@@ -330,6 +324,8 @@ if __name__ == '__main__':
                         dataBuf[58] = Laser_Dis[1]
                         dataBuf[59] = Laser_Dis[2]
                         dataBuf[60] = Laser_Dis[3]
+                        if(LaserDistance != 0) :
+                            LaserDistance = 0
                         dataBuf[61] = FlightMode
 
                     if CopterLanding == 1:
@@ -350,8 +346,8 @@ if __name__ == '__main__':
                         end="")
 
                     if qifei_flag == 1:
+                        GPIO.output(29, GPIO.LOW)
                         count = count + 1
-                        print(count)
                     if count == 200:
                         count = 0
                         qifei_flag = 0
