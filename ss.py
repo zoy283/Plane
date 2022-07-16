@@ -1,5 +1,7 @@
 # !/usr/bin/python
 # -*- coding: utf-8 -*-
+import math
+from math import pi
 import pyrealsense2 as rs
 import serial
 import numpy as np
@@ -17,29 +19,115 @@ import RPi.GPIO as GPIO
 from pyzbar import pyzbar
 import argparse
 from check_color import check_color
-
-from add_round_route import add_round_route
-from find_cam import find_cam
-from find_stick1 import find_stick
-
+from test_FindCamera import find_cam
 CopterTakingOff = 1
 TargetPosition = [0.0, 0.0, 0.0]
 filename = 'router.txt'
-front_cam = find_cam(b"USB Camera:  USB GS CAM (usb-3f980000.usb-1.1.3):")
-board_cam = find_cam(b"mmal service 16.1 (platform:bcm2835-v4l2):")
 
 
+# def check_color(frame, color):
+#     global color_flag
+#     global x_point
+#     global y_point
+#     color_range = [[156, 43, 46], [180, 255, 255], [35, 43, 46],
+#                    [77, 255, 255], [100, 43, 46], [124, 255, 255]]  # 红 绿 蓝
+#     frame = imutils.resize(frame, width=160)
+#     frame_new = frame[55:65, 75:85]
+#     hsv = cv2.cvtColor(
+#         frame_new, cv2.COLOR_BGR2HSV)  # opencv是以BGR格式读取图片的，所以要将得到的RGB值倒着输入。
+
+#     if color == "red":
+#         lower = np.array(color_range[0])
+#         upper = np.array(color_range[1])
+#     elif color == "green":
+#         lower = np.array(color_range[2])
+#         upper = np.array(color_range[3])
+#     else:
+#         lower = np.array(color_range[4])
+#         upper = np.array(color_range[5])
+
+#     mask_color = cv2.inRange(hsv, lower, upper)
+#     mask_color = cv2.medianBlur(mask_color, 3)  # ksize: 滤波模板的尺寸大小，必须是大于1的奇数
+#     cnt_color = cv2.findContours(mask_color.copy(), cv2.RETR_EXTERNAL,
+#                                  cv2.CHAIN_APPROX_SIMPLE)
+#     #  cv2.RETR_EXTERNAL     表示只检测外轮廓
+#     #   cv2.CHAIN_APPROX_SIMPLE     压缩水平方向，垂直方向，对角线方向的元素，只保留该方向的终点坐标
+#     cnt_color = cnt_color[0] if imutils.is_cv2() else cnt_color[1]
+#     cv2.rectangle(frame, (75, 55), (85, 65), (255, 0, 0), thickness=1)
+#     if len(cnt_color) > 0:
+#         area = [cv2.contourArea(i) for i in cnt_color]
+#         index = np.argmax(area)
+#         rect_red = cv2.minAreaRect(cnt_color[index])
+#         if (rect_red[1][0] > 5) and (rect_red[1][1] > 5):
+#             box_red = np.int0(cv2.boxPoints(rect_red))
+#             box_red[0][0] = box_red[0][0] + 75
+#             box_red[1][0] = box_red[1][0] + 75
+#             box_red[2][0] = box_red[2][0] + 75
+#             box_red[3][0] = box_red[3][0] + 75
+#             box_red[0][1] = box_red[0][1] + 55
+#             box_red[1][1] = box_red[1][1] + 55
+#             box_red[2][1] = box_red[2][1] + 55
+#             box_red[3][1] = box_red[3][1] + 55
+#             cv2.drawContours(frame, [box_red], 0, (0, 0, 255), 2)
+#             color_flag = 1
+#     else:
+#         color_flag = 0
+#     return frame
+
+def hough_detect(frame):
+    global Circles_x
+    global Circles_y
+    frame = imutils.resize(frame, width=320)
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # param1 --> Canny边缘检测的最大阈值
+    # param2 --> 越大Hough圆的检测要求越高
+    # maxRadius --> 0(等于图像的尺寸)
+    img = cv2.medianBlur(gray, 7)  # 进行中值模糊，去噪点
+    circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 120, param1=100, param2=40,minRadius=10, maxRadius=60)
+    if circles is not None:
+        circles = np.uint16(np.around(circles))
+        maxradius=max(circles[0,:,2])
+        for i in circles[0,:]:
+            if(i[2]==maxradius):
+                # draw the outer circle
+                cv2.circle(frame, (i[0], i[1]), i[2], (255, 0, 0), 2)
+                # draw the center of the circle
+                cv2.circle(frame, (i[0], i[1]), 2, (255, 0, 0), 3)
+                Circles_x = int(i[0])
+                Circles_y = int(i[1])
+    else:
+        Circles_x = 160
+        Circles_y = 120
+    return frame
+def hough_control(routeList, routeNodeIndex, pix_x, pix_y):
+    time = 0.5
+    limit = 10
+    x = float(routeList[routeNodeIndex][0])
+    y = float(routeList[routeNodeIndex][1])
+    z = float(routeList[routeNodeIndex][2])
+    if pix_x > 160 + limit:
+        pix_x = 160 + limit
+    if pix_x < 160 - limit:
+        pix_x = 160 - limit
+    if pix_y > 120 + limit:
+        pix_y = 120 + limit
+    if pix_y < 120 - limit:
+        pix_y = 120 - limit
+    x_new = x - (pix_x - 160.0) * z * 0.1125 / 0.304 / 100
+    y_new = y + (pix_y - 120.0) * z * 0.1125 / 0.304 / 100
+    routeList.insert(routeNodeIndex + 1,
+                     [x_new, y_new, z, time, 0, 0, 0])
+    return routeList
 def detect():
     global x_pix
     global color_flagz
     global area
+    global color
     judgeCount = 0
     while (True):
         ret, frame = cap.read()
-        if (color == "green") :
-            frame, x_pix, width, color_flagz, area = check_color(frame, color)
-        elif color == "red" :
-            frame, x_pix, width, color_flagz, area = check_color(frame, color)    
+        frame, x_pix, width, color_flagz, area = check_color(frame, color)
+        flick(color,color_flagz)
         ov.show(frame)
 
 
@@ -47,26 +135,97 @@ def laser_init():
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(29, GPIO.OUT)
-    GPIO.output(29, GPIO.HIGH)
+    GPIO.output(29,GPIO.HIGH)
     GPIO.setup(40, GPIO.OUT)
-    GPIO.output(40, GPIO.LOW)
+    GPIO.output(40,GPIO.LOW)
+    GPIO.setup(41, GPIO.OUT)
+    GPIO.output(41,GPIO.LOW)
+#29 red 41 green 40 gnd
 
 
 # LED闪烁函数 number闪烁次数 color灯光颜色
 def flicker(number, color):
     for i in range(number):
         if (color == 'red'):
-            GPIO.output(28, GPIO.LOW)
-            time1.sleep(0.5)
-            GPIO.output(28, GPIO.HIGH)
-            time1.sleep(0.5)
-        elif (color == 'green'):
             GPIO.output(29, GPIO.LOW)
             time1.sleep(0.5)
             GPIO.output(29, GPIO.HIGH)
             time1.sleep(0.5)
+        elif (color == 'green'):
+            GPIO.output(41, GPIO.LOW)
+            time1.sleep(0.5)
+            GPIO.output(41, GPIO.HIGH)
+            time1.sleep(0.5)
+def flick(color,flag):
+    if flag==1:
+        if (color == 'red'):
+            GPIO.output(29, GPIO.HIGH)
+            GPIO.output(41, GPIO.LOW)
+        elif (color == 'green'):
+            GPIO.output(41, GPIO.HIGH)
+            GPIO.output(29, GPIO.LOW)
+    else:
+        GPIO.output(29, GPIO.LOW)
+        GPIO.output(41, GPIO.LOW)
+def findStick(routeList, routeNodeIndex, x,area):
+    global route_flag
+    global countDrop
+    global color
+    X = float(routeList[routeNodeIndex][0])
+    Y = float(routeList[routeNodeIndex][1])
+    Z = float(routeList[routeNodeIndex][2])
+    
+    time = 0.5
+    minarea = 1400
+    maxarea = 1550
+    minY = 77  # 左右范围
+    maxY = 83
+    step = 0.05 # 左右步进
+    step1 = 0.02 # 前后步进
+    # 水平调整
+    if route_flag == 1:
+        if x < minY:
+            if minY-x>20:
+                step=0.05
+            else:
+                step=0.02
+            y_new = Y - step
+            routeList.insert(routeNodeIndex + 1, [X, y_new, Z, time, 0, 0, 0])
+        elif x > maxY:
+            if x-maxY>20:
+                step=0.05
+            else:
+                step=0.02
+            y_new = Y + step
+            routeList.insert(routeNodeIndex + 1, [X, y_new, Z, time, 0, 0, 0])
+        else :
+            route_flag = 2
+    if route_flag == 2:
+        if area < minarea:
+            if minarea-area>300:
+                step1=0.05
+            else:
+                step1=0.02
+            countDrop=0
+            x_new = X - step1
+            routeList.insert(routeNodeIndex + 1, [x_new, Y, Z, time, 0, 0, 0])
+        elif area > maxarea:
+            if area-maxarea>300:
+                step1=0.05
+            else:
+                step1=0.02
+            countDrop=0
+            x_new = X + step1
+            routeList.insert(routeNodeIndex + 1, [x_new, Y, Z, time, 0, 0, 0])
+        else:
+            countDrop=countDrop+1
+            if countDrop<2:
+                routeList.insert(routeNodeIndex + 1, [X, Y, Z, 0.2, 0, 0, 0])
+            else:
+                route_flag = 3
+            
 
-
+    return routeList
 def decode():
     global barcodeData
     cap = cv2.VideoCapture(1)
@@ -97,6 +256,45 @@ def decode():
             # 打印识别后的内容
 
 
+def addCircleRoute(routeList, routeNodeIndex, radius, direction):
+    radianList = [
+        1 / 6 * pi,
+        2 / 6 * pi,
+        3 / 6 * pi,
+        4 / 6 * pi,
+        5 / 6 * pi,
+        pi,
+        7 / 6 * pi,
+        8 / 6 * pi,
+        10 / 6 * pi,
+        11 / 6 * pi,
+    ]
+    x = float(routeList[routeNodeIndex][0])
+    y = float(routeList[routeNodeIndex][1])
+    z = float(routeList[routeNodeIndex][2])
+    # 生成顺时针路径
+    if (direction == 'clock'):
+        for i in range(len(radianList)):
+            x_new = round(x + radius * (-1 + math.cos(radianList[i])), 2)
+            y_new = round(y + radius * (math.sin(radianList[i])), 2)
+            routeList.insert(routeNodeIndex + 1, [x_new, y_new, z, 2, 0, 0, 0])
+        routeList.insert(routeNodeIndex + len(radianList)+1, [x, y, z, 2, 0, 0, 0])
+        routeList.insert(routeNodeIndex + len(radianList)+2, [0, y, z, 2, 0, 0, 1])
+    # 生成逆时针路径
+    elif (direction == 'cntclock'):
+        for i in range(len(radianList)):
+            x_new = round(
+                x + radius *
+                (-1 + math.cos(radianList[len(radianList) - 1 - i])), 2)
+            y_new = round(
+                y + radius * (math.sin(radianList[len(radianList) - 1 - i])),
+                2)
+            routeList.insert(routeNodeIndex + 1, [x_new, y_new, z, 2, 0, 0, 0])
+        routeList.insert(routeNodeIndex + len(radianList)+1, [x, y, z, 2, 0, 0, 0])
+        routeList.insert(routeNodeIndex + len(radianList)+2, [0, y, z, 2, 0, 0, 2])
+    return routeList
+
+
 #定时更新路径点
 def Router(name):
     global timer
@@ -115,22 +313,45 @@ def Router(name):
     global x_pix
     global color_flagz
     global area
-
+    global Circles_x
+    global Circles_y
+    global color
     if routeNodeIndex < routeNodeNum and routeStartFlag == True:
         # 第25个点（26行）将要赋值给目标,目前在第24个点（25）行的位置上
 
-        if (routeNodeIndex > 1):
-            if color_flagz == 1:
-                find_stick(routeList, routeNodeIndex, x_pix, area)
-                print("area: ", area)
-                routeNodeNum = len(routeList)
+#         if (routeNodeIndex == 2):
+#             routeList = addCircleRoute(routeList, routeNodeIndex, 0.7, 'clock')
+#             print("\nafter add: " + str(routeList))
+#             routeNodeNum = len(routeList)
+#         if (routeNodeIndex>1):
+#             hough_control(routeList, routeNodeIndex, Circles_x, Circles_y)
+#             routeNodeNum = len(routeList)
+        if (route_flag == 1 or route_flag ==2) and color_flagz == 1:
+            findStick(routeList, routeNodeIndex, x_pix,area)
+            print("area: ",area)
+            routeNodeNum = len(routeList)
+
+        if route_flag == 3:
+            if(color =="green"):
+                routeList = add_round_route(routeList, routeNodeIndex, 0.5,
+                                            'clock')
+            else :
+                routeList = add_round_route(routeList, routeNodeIndex, 0.5,
+                            'cntclock')
+            routeNodeNum = len(routeList)
+            route_flag = 4
+        FlightMode = int(routeList[routeNodeIndex][6])
+        if FlightMode == 1 :
+            color = "red"
+            route_flag = 1
+        elif FlightMode == 2 :
+            route_flag = 4
         TargetPosition[0] = float(routeList[routeNodeIndex][0])
         TargetPosition[1] = float(routeList[routeNodeIndex][1])
         TargetPosition[2] = float(routeList[routeNodeIndex][2])
         time = float(routeList[routeNodeIndex][3])
         LaserArray = int(routeList[routeNodeIndex][4])
         LaserDistance = float(routeList[routeNodeIndex][5])
-        FlightMode = int(routeList[routeNodeIndex][6])
 
         print(
             "route node %d: x : %.2f , y : %.2f , z : %.2f , time : %.1f s ,Arrray : %d , Dis : %.1f , S : %d"
@@ -242,12 +463,13 @@ if __name__ == '__main__':
     global GetOnceCmd
     global CheckSum
     #-------------测试------------
-    global color
+    global color_flag
     global route_flag
     global x_point
     global y_point
     global barcodeData
     global countDrop
+    global color
     #-----------------------------
 
     port = serial.Serial(port="/dev/ttyAMA0",
@@ -257,18 +479,20 @@ if __name__ == '__main__':
                          timeout=1000)
     laser_init()
     ov.init()
+    board_cam = find_cam(b"mmal service 16.1 (platform:bcm2835-v4l2):")
+    front_cam = find_cam(b"USB Camera:  USB GS CAM (usb-3f980000.usb-1.1.3):")
     cap = cv2.VideoCapture(front_cam)
     cap.set(3, 320)
     cap.set(4, 240)
-    route_flag = 1
-    color = "green"
+    route_flag = 1  
     routeStartFlag = True
     barcodeData = 0
-    countDrop = 0
+    countDrop=0
+    color = "red"
     #串口通信线程
     thread_Serial = Thread(target=PortCom, args=(port, ))
     thread_Serial.start()
-    #     #激光
+#     #激光
     thread_Laser = Thread(target=detect, args=())
     thread_Laser.start()
     #导入路径文件
@@ -324,8 +548,8 @@ if __name__ == '__main__':
                         dataBuf[58] = Laser_Dis[1]
                         dataBuf[59] = Laser_Dis[2]
                         dataBuf[60] = Laser_Dis[3]
-                        if(LaserDistance != 0) :
-                            LaserDistance = 0
+                        if LaserDistance!=0:
+                            LaserDistance=0
                         dataBuf[61] = FlightMode
 
                     if CopterLanding == 1:
@@ -346,7 +570,7 @@ if __name__ == '__main__':
                         end="")
 
                     if qifei_flag == 1:
-                        GPIO.output(29, GPIO.LOW)
+                        GPIO.output(29,GPIO.LOW)
                         count = count + 1
                     if count == 200:
                         count = 0
