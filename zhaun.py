@@ -19,15 +19,25 @@ def yaw_rotate1(routeList, routeNodeIndex, theta):
     X = float(routeList[routeNodeIndex][0])
     Y = float(routeList[routeNodeIndex][1])
     Z = float(routeList[routeNodeIndex][2])
-
-    count = theta // 10
-    for i in range(int(count)):
-        X,Y=yaw_rotate(X,Y,angle)
-        routeList.insert(routeNodeIndex + 1, [X, Y, Z, time, 0, angle, 0])
-    X, Y = yaw_rotate(X, Y, (theta % 10) * math.pi / 180)
-    
-    routeList.insert(routeNodeIndex+count+1,
-                     [X, Y, Z, time, 0, (theta % 10) * math.pi / 180, 0])
+    if(theta>0):
+        count = theta // 10
+        print(count)
+        for i in range(int(count)):
+            X,Y=yaw_rotate(X,Y,angle)
+            routeList.insert(routeNodeIndex +i+1, [X, Y, Z, time, 0, 10, 0])
+        X, Y = yaw_rotate(X, Y, (theta % 10) * math.pi / 180)
+        
+        routeList.insert(routeNodeIndex+int(count)+1,
+                        [X, Y, Z, time, 0, theta -count*10, 0])
+    elif(theta<0):
+        count = -theta // 10
+        for i in range(int(count)):
+            X,Y=yaw_rotate(X,Y,angle)
+            routeList.insert(routeNodeIndex +i+1, [X, Y, Z, time, 0, -10, 0])
+        X, Y = yaw_rotate(X, Y, (theta % 10) * math.pi / 180)
+        
+        routeList.insert(routeNodeIndex+int(count)+1,
+                        [X, Y, Z, time, 0, theta+count*10, 0])
     return routeList
 
 if __name__ == '__main__':
