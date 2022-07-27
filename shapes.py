@@ -1,8 +1,10 @@
+from asyncio import log
 import collections
 import math
 
 import cv2
 import numpy as np
+import imutils
 
 
 def stackImages(scale, imgArray):
@@ -75,8 +77,8 @@ def ColorList():
     # dict['pink']=color_list
  
     #红色
-    lower_red = np.array([0, 43, 46])
-    upper_red = np.array([10, 255, 255])
+    lower_red = np.array([165, 43, 46])
+    upper_red = np.array([180, 255, 255])
     color_list = []
     color_list.append(lower_red)
     color_list.append(upper_red)
@@ -116,7 +118,7 @@ def ColorList():
  
     #蓝色
     lower_blue = np.array([100, 43, 46])
-    upper_blue = np.array([124, 255, 255])
+    upper_blue = np.array([130, 255, 255])
     color_list = []
     color_list.append(lower_blue)
     color_list.append(upper_blue)
@@ -134,24 +136,25 @@ def ColorList():
 
 #颜色判断
 def findColor(imgcut):
-    img_hsv=cv2.cvtColor(imgcut,cv2.COLOR_BGR2HSV)
-    color_dict=ColorList()
-    #print(color_dict)
-    color_most=0
     color_now=None
-    for color in color_dict:
-        #二值化 和颜色字典比较 在上下限之间的像素变为255，之外的所有像素变为0
-        color_cmp=cv2.inRange(img_hsv,color_dict[color][0],color_dict[color][1])
-        #膨胀 使颜色分割成块并更突出
-        color_boom = cv2.dilate(color_cmp,None,iterations=1)
-        #取出每一小块
-        contours,hierarchy=cv2.findContours(color_boom.copy(),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
-        color_area=0
-        for img in contours:
-            color_area+=cv2.contourArea(img)
-        if(color_area>color_most):
-            color_most=color_area
-            color_now=color
+    if np.all(imgcut==None) == False :
+        img_hsv=cv2.cvtColor(imgcut,cv2.COLOR_BGR2HSV)
+        color_dict=ColorList()
+        #print(color_dict)
+        color_most=0
+        for color in color_dict:
+            #二值化 和颜色字典比较 在上下限之间的像素变为255，之外的所有像素变为0
+            color_cmp=cv2.inRange(img_hsv,color_dict[color][0],color_dict[color][1])
+            #膨胀 使颜色分割成块并更突出
+            color_boom = cv2.dilate(color_cmp,None,iterations=1)
+            #取出每一小块
+            contours,hierarchy=cv2.findContours(color_boom.copy(),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
+            color_area=0
+            for img in contours:
+                color_area+=cv2.contourArea(img)
+            if(color_area>color_most):
+                color_most=color_area
+                color_now=color
     return color_now
 
 #计算斜率
@@ -181,13 +184,22 @@ def LastButNotLeast(imginit,imgcopy):
     #findContours(image, mode, method[, contours[, hierarchy[, offset]]]) -> contours, hierarchy
     contours,hierarchy=cv2.findContours(img_Canny,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
     #参数：输入图像，霍夫梯度法，分辨率，最小距离，检测方法的对应的参数*2，半径
-    for img in contours:    
+    color = None
+    tag = None
+    x = 0
+    y = 0
+    area = []
+    if contours is not None:
+        for cnt in contours:
+            if cv2.contourArea(cnt) < 9000 :
+                area.append(cv2.contourArea(cnt)) 
+        index = np.argmax(area)
+        img = contours[index]   
         #计算面积 太小就不算了
-        area=cv2.contourArea(img)
-        if area>30:
+        if cv2.contourArea(img)>25:
             perimeter=cv2.arcLength(img,True)
             #折线化
-            side=cv2.approxPolyDP(img,0.01*perimeter,True)
+            side=cv2.approxPolyDP(img,0.1*perimeter,True)
             #print(side)
             #计算有几条线
             sideNum=len(side)
@@ -258,28 +270,52 @@ def LastButNotLeast(imginit,imgcopy):
             color=findColor(imgCut)
             #添加标签
             cv2.rectangle(imgcopy, (x-5, y-5), (x + wide+5, y + high+5), (0, 235, 6), 2)
-            cv2.putText(imgcopy, tag,(x, y), cv2.FONT_HERSHEY_TRIPLEX, 0.5,(0,0, 255), 1)
-            cv2.putText(imgcopy, color,(x+10, y+10), cv2.FONT_HERSHEY_TRIPLEX, 0.3,(0, 255, 255), 1)
+            cv2.putText(imgcopy, tag+str(sideNum),(x, y), cv2.FONT_HERSHEY_TRIPLEX, 0.5,(0,0, 255), 1)
+            cv2.putText(imgcopy, color,(x+10, y+10), cv2.FONT_HERSHEY_TRIPLEX, 0.3,(0, 0, 0), 1)
+    return color,tag,x0,y0
 
 if __name__ == "__main__":
-    # path='shapes3.png'
+    # path='shapes5.jpg'
+    # img = cv2.imread(path)
+    # img = imutils.resize(img, width=160)
+    # img = img[50:100,50:100]
     #path=r"D:\test.png"
     cap=cv2.VideoCapture(0)
     cap.set(3,320)
     cap.set(4,240)
+    color_now = None
+    shape_now = None
+    cnt = 0
     while (True):
-        ret,img=cap.read()
+        # ret,img=cap.read()
+        img = cv2.imread('shapes1.png')
+        img = imutils.resize(img, width=160)
         while(np.all(img==None)):
             print("无法读取图片")
         img_Copy=img.copy()
-        
+        # 灰度化
+        imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        # 高斯平滑
+        imgBlur = cv2.GaussianBlur(imgGray, (7, 7), 1)
+        # 边缘检测
+        imgCanny = cv2.Canny(imgBlur, 50, 50)
         #图像处理函数
-        LastButNotLeast(img,img_Copy)
+        color,shape,x,y = LastButNotLeast(img,img_Copy)
 
-        #输出结果
+        if color != None :
+            color_now = color    
+        if shape != None :
+            shape_now = shape
+        if color == None:
+            cnt =cnt +1
+        # #输出结果
         imgBlank = np.zeros_like(img)
-        imgStack = stackImages(1.5, ([img, img_Copy]))
-
+        imgStack = stackImages(2, ([img, imgGray,imgBlur],[img,imgCanny,img_Copy]))
         cv2.imshow("Stack1", imgStack)
-
-        cv2.waitKey(0)
+        cv2.waitKey(1)
+        print("color :" ,color)
+        print("shape :" ,shape)
+        print("x  y :" , x, y)        
+        print("cnt : "  ,cnt)
+    camera.release()
+    cv2.destroyAllWindows() 
